@@ -1,5 +1,5 @@
 def scrape():
-    info = []
+    mars_info = []
     # Dependencies
     from bs4 import BeautifulSoup
     import requests
@@ -127,4 +127,12 @@ def scrape():
 
     hemisphere_image_urls
 
-    return info
+    mars_info.append(news_title)
+    mars_info.append(news_p)
+    mars_info.append(featured_img_url)
+    mars_info.append(mars_facts_url)
+    mars_info.append(hemisphere_image_urls)
+    
+    return mars_info
+
+scrape()
