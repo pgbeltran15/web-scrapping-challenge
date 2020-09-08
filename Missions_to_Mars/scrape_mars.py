@@ -1,61 +1,28 @@
-def scrape():
-    mars_info = []
-    # Dependencies
-    from bs4 import BeautifulSoup
-    import requests
-    import pymongo
-    from splinter import Browser
-    import pandas as pd
+from bs4 import BeautifulSoup
+import requests
+import pymongo
+from splinter import Browser
+import pandas as pd
 
-    # Initialize PyMongo to work with MongoDBs
-    conn = 'mongodb://localhost:27017'
-    client = pymongo.MongoClient(conn)
-
-    #Windows users
+def init_browser():
+    # @NOTE: Replace the path with your actual path to the chromedriver
     executable_path = {'executable_path': 'chromedriver.exe'}
-    browser = Browser('chrome', **executable_path, headless=False)
+    return Browser("chrome", **executable_path, headless=False)
 
-    #Mac users
-    # executable_path = {'executable_path': '/usr/local/bin/chromedriver'}
-    # browser = Browser('chrome', **executable_path, headless=False)
-
+def scrape():
+    browser = init_browser()
+    
     #NASA Scrapping
 
     #NASA URL
     NASA_url = 'https://mars.nasa.gov/news/?page=0&per_page=40&order=publish_date+desc%2Ccreated_at+desc&search=&category=19%2C165%2C184%2C204&blank_scope=Latest'
-    browser.visit(NASA_url)
-    html = browser.html
-    soup = BeautifulSoup(html, 'html.parser')
+    # Retrieve page with the requests module
+    response = requests.get(NASA_url)
+    # Create BeautifulSoup object; parse with 'lxml'
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-    results = soup.find_all('div', class_='list_text')
-    results
-
-    #List of articles
-    for result in results:
-        title= result.find('div', class_="content_title")
-        text = result.find('div', class_='article_teaser_body')
-        date= result.find('div',class_='list_date')
-        article_url= result.find('a')['href']
-        print('-----------')
-        print(title)
-        print(text)
-        print(date)
-        print(NASA_url + article_url)
-        
-
-    #Store latest article in dictionary
-    news_title = []
-    news_p =[]
-    news_date = []
-
-    title= result.find('div', class_="content_title")
-    text = result.find('div', class_='article_teaser_body')
-    date= result.find('div',class_='list_date')
-    article_url= result.find('a')['href']
-
-    news_title.append(title)
-    news_p.append(text)
-    news_date.append(date)
+    news_title= soup.find('div', class_="content_title").text
+    news_p = soup.find('div', class_='rollover_description_inner').text
 
     #JPL Mars Space Images Scrapping
     JPL_url = 'https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars'
@@ -63,25 +30,26 @@ def scrape():
     html = browser.html
     soup = BeautifulSoup(html, 'html.parser')
 
-    images = soup.find_all('div', class_='carousel_container')
-    images
-
-    img_url = image.find('article')['style']
+    img_url = soup.find('article')['style']
     img_url = img_url.split("'")[1]
     img_url = img_url.split("'")[0]
     featured_img_url= 'https://www.jpl.nasa.gov/'+ img_url
-    print(featured_img_url)
+
+    # Close the browser after scraping
+    browser.quit()
 
     #Mars Facts Scrapping
     mars_facts_url = 'https://space-facts.com/mars/'
 
-    table= pd.read_html(mars_facts_url)
-    df = tables[0]
+    table = pd.read_html(mars_facts_url)
+    df = table[0]
     df.columns=['Facts','Info']
     df.to_html('mars_facts.html')
+    # mars_facts= pd.read_html('mars_facts.html')
+    mars_facts= df.to_html('mars_facts.html')
 
     #Mars Hemispheres Scrapping
-    hemisphere_image_urls = []
+    hemisphere_image = []
 
     #cerberus hemisphere
     cerberus_hemisphere_url = 'https://astrogeology.usgs.gov/search/map/Mars/Viking/cerberus_enhanced'
@@ -91,7 +59,7 @@ def scrape():
     cerberus = soup.find('li')
     img_url = cerberus.find('a')['href']
     cerberus_hemisphere = {'title': title, 'img_url':img_url}
-    hemisphere_image_urls.append(cerberus_hemisphere)
+    hemisphere_image.append(cerberus_hemisphere)
 
     #schiaparelli hemisphere
     schiaparelli_hemisphere_url = 'https://astrogeology.usgs.gov/search/map/Mars/Viking/schiaparelli_enhanced'
@@ -101,8 +69,7 @@ def scrape():
     schiaparelli = soup.find('li')
     img_url = schiaparelli.find('a')['href']
     schiaparelli_hemisphere = {'title': title, 'img_url':img_url}
-    hemisphere_image_urls.append(schiaparelli_hemisphere)
-
+    hemisphere_image.append(schiaparelli_hemisphere)
 
     #sytris major hemisphere
     sytris_major_hemisphere_url = 'https://astrogeology.usgs.gov/search/map/Mars/Viking/syrtis_major_enhanced'
@@ -112,8 +79,7 @@ def scrape():
     sytris_major = soup.find('li')
     img_url = sytris_major.find('a')['href']
     sytris_major_hemisphere = {'title': title, 'img_url':img_url}
-    hemisphere_image_urls.append(sytris_major_hemisphere)
-
+    hemisphere_image.append(sytris_major_hemisphere)
 
     # Valles Marineris hemisphere
     valles_marineris_hemisphere_url = 'https://astrogeology.usgs.gov/search/map/Mars/Viking/valles_marineris_enhanced'
@@ -123,16 +89,16 @@ def scrape():
     valles_marineris = soup.find('li')
     img_url = valles_marineris.find('a')['href']
     valles_marineris_hemisphere = {'title': title, 'img_url':img_url}
-    hemisphere_image_urls.append(valles_marineris_hemisphere)
+    hemisphere_image.append(valles_marineris_hemisphere)
 
-    hemisphere_image_urls
-
-    mars_info.append(news_title)
-    mars_info.append(news_p)
-    mars_info.append(featured_img_url)
-    mars_info.append(mars_facts_url)
-    mars_info.append(hemisphere_image_urls)
+    mars_data={
+       'news_title': news_title,
+       'news_p': news_p,
+       'featured_img_url': featured_img_url,
+       'mars_facts': mars_facts,
+       'hemisphere_image': hemisphere_image
+    }
     
-    return mars_info
+    return mars_data
 
 scrape()
