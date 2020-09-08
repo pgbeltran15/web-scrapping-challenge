@@ -42,11 +42,12 @@ def scrape():
     mars_facts_url = 'https://space-facts.com/mars/'
 
     table = pd.read_html(mars_facts_url)
-    df = table[0]
-    df.columns=['Facts','Info']
-    df.to_html('mars_facts.html')
+    mars_facts = table[0]
+    mars_facts.columns=['Description','Facts']
+    html_table = mars_facts.to_html(index=False)
     # mars_facts= pd.read_html('mars_facts.html')
-    mars_facts= df.to_html('mars_facts.html')
+    # mars_facts= df.to_html('mars_facts.html')
+    
 
     #Mars Hemispheres Scrapping
     hemisphere_image = []
@@ -95,7 +96,7 @@ def scrape():
        'news_title': news_title,
        'news_p': news_p,
        'featured_img_url': featured_img_url,
-       'mars_facts': mars_facts,
+       'html_table': html_table,
        'hemisphere_image': hemisphere_image
     }
     
